@@ -10,7 +10,7 @@ services:
     environment:
       - FLASK_ENV=development
     env_file:
-      - .env  
+      - .env
     depends_on:
       - redis
       - postgres
@@ -22,7 +22,7 @@ services:
     env_file:
       - .env
     volumes:
-      - ./db/postgresDB:/var/lib/postgresql/data 
+      - ./db/postgresDB:/var/lib/postgresql/data
 
   redis:
     image: "redis:alpine"
@@ -39,4 +39,15 @@ services:
     environment:
       - FLASK_ENV=development
     env_file:
-      - .env    
+      - .env
+
+  web2:
+    build: ../event-tracker-backend
+    ports:
+      - "3000:3000"
+    env_file:
+      - .env
+    depends_on:
+      - redis
+      - postgres
+      
