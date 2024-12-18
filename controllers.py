@@ -12,6 +12,8 @@ def initialize_routes(app,redis_conn,pg_conn):
     auth_service = AuthService(pg_conn)
     mails_service = MailsService(app,redis_conn,pg_conn)
     
+    front_end_url = app.config['FRONT_END_URL']
+    
     class AuthController(Resource):
         def get(self, action):
             if action == 'login':
@@ -20,7 +22,7 @@ def initialize_routes(app,redis_conn,pg_conn):
                 code = request.args.get('code')
                 token, user, access_token = auth_service.callback(code)
                 mails_service.fetch_emails(access_token=access_token,user=user)
-                return redirect(f'http://localhost:4200/login?token={token}', code=302)
+                return redirect(f'{front_end_url}/login?token={token}', code=302)
             return jsonify({'error': 'Action not recognized'})
 
     class EmailController(Resource):
