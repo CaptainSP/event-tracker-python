@@ -35,7 +35,8 @@ class AuthService:
             )
             token_response.raise_for_status()
             tokens = token_response.json()
-            return self.complete_login(tokens['access_token']), tokens['access_token']
+            jwt_token, user = self.complete_login(tokens['access_token'])
+            return jwt_token, user, tokens['access_token']
         except requests.RequestException as e:
             app.logger.error(f"Error during token exchange: {e}")
             return { 'error': 'Failed to perform token exchange' }
@@ -55,7 +56,7 @@ class AuthService:
     def complete_login(self, access_token):
         email = self.fetch_email_of_user(access_token)
         user = self.find_or_create_user(email, access_token)
-        return self.create_jwt_by_user(user)
+        return self.create_jwt_by_user(user), user
 
     def find_or_create_user(self, email, access_token):
         # Implement your database logic to find or create user here
@@ -95,7 +96,7 @@ class AuthService:
         payload = {
             'sub': user['id'],
             'iat': datetime.utcnow(),
-            'exp': datetime.utcnow() + timedelta(hours=1)  # Token expiration time
+            'exp': datetime.utcnow() + timedelta(weeks=4) # Token expires in 4 weeks
         }
         
         token = jwt.encode(payload, app.config['JWT_SECRET'], algorithm='HS256')

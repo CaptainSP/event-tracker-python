@@ -2,6 +2,7 @@ from flask import Flask, request, redirect, jsonify
 from flask_restful import Api
 import redis
 from rq import Queue
+from flask_cors import CORS
 
 from controllers import initialize_routes
 from config import Config
@@ -9,7 +10,9 @@ from config import Config
 import psycopg2
 
 
-app = Flask(__name__)
+app = Flask(__name__, static_folder='public',static_url_path='/')
+CORS(app, resources={r"/*": {"origins": "*"}})
+
 app.config.from_object(Config)
 
 # Redis Connection and Queue Initialization
