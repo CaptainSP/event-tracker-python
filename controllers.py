@@ -82,8 +82,16 @@ def initialize_routes(app,redis_conn,pg_conn):
     class SettingsController(Resource):
         def post(self):
             data = request.get_json()
+            headers = request.headers
+            jwt = headers.get('Authorization')
+            if not jwt:
+                return jsonify({'error': 'Unauthorized'})
+            jwt_token = jwt.split(' ')[1]
+            parsed_jwt = auth_service.decode_jwt(jwt_token)
+            sub = parsed_jwt.get('sub')
+            
             cursor = pg_conn.cursor()
-            cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (data['user_id'], data['settings']))
+            cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (sub, data['settings']))
             pg_conn.commit()
             cursor.close()
             return jsonify({'status': 'Settings saved successfully'})

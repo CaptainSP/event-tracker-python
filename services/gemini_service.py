@@ -327,10 +327,10 @@ The expected output format is:
         settings_query = cursor.execute(
                         '''
                         SELECT * FROM "setting" WHERE "user_id" = %s
-                        ''', (self.user['id'])
+                        ''', (self.user['id'],)
                     )
-        settings = settings_query.fetchone()
-        settings_text = settings[1]
+        settings = cursor.fetchone()
+        settings_text = settings[2]
         print(f"User settings is {settings_text}")
         chat = self.model.start_chat()
         response = chat.send_message(f"""
