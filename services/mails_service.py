@@ -62,5 +62,6 @@ class MailsService:
         cursor.execute('''
             INSERT INTO "mail" ("outlookId", "subject", "body", "sender", "senderName") VALUES (%s, %s, %s, %s, %s)
         ''', (email['id'], email['subject'], email['bodyPreview'], email['sender']['emailAddress']['address'], email['sender']['emailAddress']['name']))
+        self.pg_conn.commit()
         cursor.close()
         self.queue.enqueue(process_job, email, access_token, user)

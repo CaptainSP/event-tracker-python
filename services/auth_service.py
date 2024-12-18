@@ -93,6 +93,7 @@ class AuthService:
         
         cursor = self.pg_conn.cursor()
         cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (user[0], 'I want all kind of events.'))
+        self.pg_conn.commit()
         cursor.close()
         
         return { 'id': user[0], 'email': user[1], 'access_token': user[2] }
