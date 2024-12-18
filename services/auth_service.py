@@ -85,9 +85,14 @@ class AuthService:
         cursor.execute('INSERT INTO "user" ("email", "accessToken") VALUES (%s, %s)', (email, access_token))
         self.pg_conn.commit()
         cursor.close()
+            
         cursor = self.pg_conn.cursor()
         cursor.execute('SELECT * FROM "user" WHERE "email" = %s', (email,))
         user = cursor.fetchone()
+        cursor.close()
+        
+        cursor = self.pg_conn.cursor()
+        cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (user[0], 'I want all kind of events.'))
         cursor.close()
         
         return { 'id': user[0], 'email': user[1], 'access_token': user[2] }
