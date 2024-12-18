@@ -82,7 +82,7 @@ class AuthService:
     def create_user(self, email, access_token):
         # Implement user creation logic with database
         cursor = self.pg_conn.cursor()
-        cursor.execute('INSERT INTO "user" (email, accessToken) VALUES (%s, %s)', (email, access_token))
+        cursor.execute('INSERT INTO "user" ("email", "accessToken") VALUES (%s, %s)', (email, access_token))
         self.pg_conn.commit()
         cursor.close()
         cursor = self.pg_conn.cursor()
