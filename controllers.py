@@ -93,9 +93,22 @@ def initialize_routes(app,redis_conn,pg_conn):
             sub = parsed_jwt.get('sub')
             
             cursor = pg_conn.cursor()
-            cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (sub, data['settings']))
-            pg_conn.commit()
+            cursor.execute('SELECT * FROM "setting" WHERE "user_id" = %s', (sub,))
+            settings = cursor.fetchone()
             cursor.close()
+            
+            if settings:
+                cursor = pg_conn.cursor()
+                cursor.execute('UPDATE "setting" SET "settings" = %s WHERE "user_id" = %s', (data['settings'], sub))
+                pg_conn.commit()
+                cursor.close()
+                return jsonify({'status': 'Settings updated successfully'})
+            else:
+                cursor = pg_conn.cursor()
+                cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (sub, data['settings']))
+                pg_conn.commit()
+                cursor.close()
+            
             return jsonify({'status': 'Settings saved successfully'})
         def get(self):
             headers = request.headers
