@@ -16,6 +16,7 @@ CORS(app, resources={r"/*": {"origins": "*"}})
 app.config.from_object(Config)
 
 # Redis Connection and Queue Initialization
+print(app.config['REDIS_URL'])
 redis_conn = redis.from_url(app.config['REDIS_URL'])
 queue = Queue('gemini', connection=redis_conn)
 

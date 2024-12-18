@@ -18,7 +18,7 @@ class Config:
     GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/'
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
     JWT_SECRET = os.getenv('JWT_SECRET')
-    REDIS_URL = os.getenv('REDIS_URL'),
+    REDIS_URL = os.getenv('REDIS_URL')
     FRONT_END_URL = os.getenv('FRONT_END_URL')
 
 # Handle missing configuration
