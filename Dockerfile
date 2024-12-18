@@ -12,11 +12,12 @@ RUN pip3 install --upgrade pip
 RUN python3 -m pip install --upgrade setuptools
 
 RUN pip3 install --upgrade cython
+RUN pip install psycopg2-binary
 # Install any needed packages specified in requirements.txt
-RUN pip install --no-cache-dir -r requirements.txt
+RUN pip install -r requirements.txt
 
 # Make port 5000 available to the world outside this container
 EXPOSE 3000
 
 # Run app.py when the container launches
-CMD ["python", "app.py"]
+CMD [ "python", "-m" , "flask", "run", "--host=0.0.0.0"]

@@ -16,9 +16,9 @@ class Config:
     MAIL_SCOPE = os.getenv('MAIL_SCOPE')
     TOKEN_URL = 'https://login.microsoftonline.com/common/oauth2/v2.0/token'
     GRAPH_API_URL = 'https://graph.microsoft.com/v1.0/'
-    REDIS_URL = os.getenv('REDIS_URL')
     GOOGLE_API_KEY = os.getenv('GOOGLE_API_KEY')
     JWT_SECRET = os.getenv('JWT_SECRET')
+    REDIS_URL = os.getenv('REDIS_URL')
 
 # Handle missing configuration
 if not all((Config.MAIL_CLIENT_ID, Config.MAIL_CLIENT_SECRET, Config.MAIL_REDIRECT_URI, Config.MAIL_SCOPE, Config.REDIS_URL, Config.GOOGLE_API_KEY)):

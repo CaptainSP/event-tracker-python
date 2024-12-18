@@ -76,10 +76,35 @@ def initialize_routes(app,redis_conn,pg_conn):
             should_serve_file = page.endswith('.js') or page.endswith('.css') or page.endswith('.ico') or page.endswith('.json')
             if should_serve_file:
                 return send_from_directory('public', page)
-            return send_from_directory('public', 'index.html')        
+            return send_from_directory('public', 'index.html')  
+        
+        
+    class SettingsController(Resource):
+        def post(self):
+            data = request.get_json()
+            cursor = pg_conn.cursor()
+            cursor.execute('INSERT INTO "setting" ("user_id", "settings") VALUES (%s, %s)', (data['user_id'], data['settings']))
+            pg_conn.commit()
+            cursor.close()
+            return jsonify({'status': 'Settings saved successfully'})
+        def get(self):
+            headers = request.headers
+            jwt = headers.get('Authorization')
+            if not jwt:
+                return jsonify({'error': 'Unauthorized'})
+            jwt_token = jwt.split(' ')[1]
+            parsed_jwt = auth_service.decode_jwt(jwt_token)
+            sub = parsed_jwt.get('sub')
+            cursor = pg_conn.cursor()
+            cursor.execute('SELECT * FROM "setting" WHERE "user_id" = %s', (sub,))
+            settings = cursor.fetchone()
+            cursor.close()
+            return jsonify(settings)
+        
     api.add_resource(AuthController, '/auth/<string:action>')
     api.add_resource(EmailController, '/emails')
     api.add_resource(EventsController, '/events')
     api.add_resource(TagsController, '/tags')
+    api.add_resource(SettingsController, '/settings')
     api.add_resource(ServeAngularApp, '/')
     api.add_resource(ServeAngularPages, '/<string:page>')

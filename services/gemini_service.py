@@ -14,12 +14,15 @@ current_year = datetime.now().year
 
 load_dotenv()
 
-class GeminiService:
+class EventExtractor:
     def __init__(self, conn, user):
         self.api_key = os.getenv('GOOGLE_API_KEY')
         genai.configure(api_key=self.api_key)
         self.conn = conn
         self.user = user
+        
+        self.adder = CalendarAdder(conn, user)
+        
 
         # Create the model
         generation_config = {
@@ -29,12 +32,7 @@ class GeminiService:
             "max_output_tokens": 8192,
             "response_mime_type": "text/plain",
         }
-        self.model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
-            generation_config=generation_config,
-            system_instruction="\n### System Instruction for LLM: Handling Mail Content and Extracting Event Data\n\n**Objective:**\nDevelop a system that processes mail content, identifies whether the mail contains event data, and if so, extracts and returns the event details in a structured JSON format.\n\n**Input:**\nMail content (plain text)\n\n**Output:**\nA structured JSON object indicating the presence of event details and, if applicable, the event data itself.\n\n### Steps:\n\n1. **Identify Event Information:**\n   - Scan the mail content to determine if it contains event-related information.\n   - Events may include meetings, conferences, exams, summits, appointments, etc.\n\n2. **Extract Event Data:**\n   If event information is identified, extract the following details:\n   - **Date:** Extract the date of the event in ISO format (YYYY-MM-DDTHH:MM:SSZ).\n   - **Title:** Extract the title or name of the event.\n   - **Priority:** Assign a priority level to the event based on its importance or urgency, represented as an integer between 0 and 100.\n   - **Tags:** Generate relevant tags based on the event content. Tags may include keywords such as \"Exam,\" \"Summit,\" \"Meeting,\" etc.\n\n3. **Formulate Response:**\n   - If the mail contains event information, construct a JSON object with `hasEvent` set to true and include the extracted `eventData`.\n   - If no event information is identified, set `hasEvent` to false.\n\n### Example:\n\n#### Mail Content:\n```\nSubject: Project Kick-off Meeting\n\nDear Team,\n\nWe are excited to launch our new project! Please join us for the kick-off meeting on November 15, 2024, at 10:00 AM.\n\nAgenda:\n1. Introduction\n2. Project Overview\n3. Roles and Responsibilities\n4. Q&A Session\n\nLooking forward to your participation.\n\nBest regards,\nProject Manager\n```\n\n#### Output:\n```json\n{\n  \"hasEvent\": true,\n  \"eventData\": {\n    \"startDate\": \"ISO Date string\",\n    \"endDate\": \"ISO Date string\",\n    \"title\": \"string\",\n   \"summary\":\"string\",\n    \"title\": \"Project Kick-off Meeting\",\n    \"priority\": 75,\n    \"tags\": [\"Meeting\"]\n  }\n}\n```\n\n### Implementation:\n\n#### 1. Parse Mail Content:\n   - Extract key sections (e.g., subject, body, dates, times, etc.)\n   - Identify patterns indicative of event data (e.g., dates, times, event-related keywords)\n\n#### 2. Extract Event Details:\n   - Use natural language processing (NLP) techniques to identify dates, titles, and relevant content\n   - Calculate or assign a priority based on predefined rules\n\n#### 3. Generate Tags:\n   - Use keyword extraction techniques to generate relevant tags from the content\n\n### JSON Response Structure:\n```json\n{\n  \"hasEvent\": boolean,\n  \"eventData\": {\n    \"startDate\": \"ISO Date string\",\n    \"endDate\": \"ISO Date string\",\n    \"title\": \"string\",\n   \"summary\":\"string\",\n    \"priority\": number,\n    \"tags\": [\"string\"]\n  }\n}\n```\n\n### Notes:\n- Ensure the date is converted to the ISO format correctly.\n- Assign priority rationally, considering factors like urgency, date proximity, and content significance.\n- Tag generation should be contextually relevant and accurate.\n\n---\n\nThis instruction sets a clear task for the LLM and provides guidance on how to achieve the objective while ensuring clarity in the expected output format.",
-        )
-
+       
         self.system_instruction = """
 
 ### System Instruction for LLM: Handling Mail Content and Extracting Event Data
@@ -149,6 +147,13 @@ Project Manager
 This instruction sets a clear task for the LLM and provides guidance on how to achieve the objective while ensuring clarity in the expected output format.
         """.replace("{current_year}", str(current_year))
         
+        self.model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config=generation_config,
+            system_instruction=self.system_instruction,
+        )
+
+        
     
     def handle_email(self, email, access_token):
         body_content = email.get('body', {}).get('content', '')
@@ -179,6 +184,10 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             if not event_data.get('title', ''):
                 raise ValueError('Title is required')
             
+            added_data = self.adder.handle_event(event_data)
+            if not added_data['addToCalendar']:
+                print('Event not added to calendar')
+                return
             
             event_details = {
                 'subject': event_data.get('title', ''),
@@ -261,7 +270,79 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             self.conn.rollback()
             raise
 
+class CalendarAdder:
+    def __init__(self, conn, user):
+        self.api_key = os.getenv('GOOGLE_API_KEY')
+        genai.configure(api_key=self.api_key)
+        self.conn = conn
+        self.user = user
+
+        # Create the model
+        generation_config = {
+            "temperature": 1,
+            "top_p": 0.95,
+            "top_k": 40,
+            "max_output_tokens": 8192,
+            "response_mime_type": "text/plain",
+        }
         
+        self.system_instruction = """
+    
+**System Instruction:**
+
+The agent is designed to process user settings and event data. Upon receiving user settings prompt and event data, the agent will proceed through the following steps:
+
+1. **Extract Event Data**: The agent will extract the following event details from the input:
+   - Title
+   - Description
+   - Dates
+   - Tags
+   - Location
+
+2. **Decision Making**: Using a set of predefined criteria based on user settings, the agent will decide whether to add the event to the calendar. The criteria might include factors such as:
+   - Relevance of the event to the user's interests (inferred from tags and description).
+   - Conflicts with existing calendar events (dates and times).
+   - Importance and priority of the event (through tags, title, or user settings).
+
+3. **Return Output**: Based on the decision, the agent will return a JSON object indicating whether the event should be added to the calendar.
+
+The expected output format is:
+
+```json
+{
+  "addToCalendar": boolean
+}
+```
+        """
+        
+        self.model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            generation_config=generation_config,
+            system_instruction=self.system_instruction,
+        )     
+        
+    def handle_event(self,event):
+        
+        cursor = self.conn.cursor()
+        settings_query = cursor.execute(
+                        '''
+                        SELECT * FROM "setting" WHERE "user_id" = %s
+                        ''', (self.user['id'])
+                    )
+        settings = settings_query.fetchone()
+        settings_text = settings[1]
+        print(f"User settings is {settings_text}")
+        chat = self.model.start_chat()
+        response = chat.send_message(f"""
+                                     ***The event data***\n
+                                     {json.dumps(event)}\n\n\n
+                                     ***The user settings prompot***\n
+                                     {settings_text}
+                                     """)
+        text = response.text
+        json_in_text = text[text.index('```json') + len('```json'): text.rindex('```')]
+        data_object = json.loads(json_in_text)
+        return data_object       
 
 def process_job(email, access_token, user):
     conn = psycopg2.connect(database=os.getenv('POSTGRES_DB'),
@@ -269,5 +350,5 @@ def process_job(email, access_token, user):
                     password=os.getenv('POSTGRES_PASSWORD'),
                     host=os.getenv('POSTGRES_HOST'),
                     port=os.getenv('POSTGRES_PORT'))
-    gemini_service = GeminiService(conn, user)
-    gemini_service.handle_email(email, access_token)
+    extractor = EventExtractor(conn, user)
+    extractor.handle_email(email, access_token)
