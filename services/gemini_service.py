@@ -217,6 +217,10 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
         if body_content:
             chat = self.model.start_chat()
             response = chat.send_message(f"Sender: {email['sender']['emailAddress']['name']} - {email['sender']['emailAddress']['address']}\n\n{body_content}")
+            
+            tokens= self.model.count_tokens(chat.history).total_tokens
+            print(f"Used tokens for event: {tokens}")
+
             text = response.text
             print(text)
             data_object = json.loads(text) # Parse the response
@@ -412,6 +416,8 @@ The expected output format is:
                                      {settings_text}
                                      """)
         text = response.text # Get the response text
+        tokens= self.model.count_tokens(chat.history).total_tokens
+        print(f"Used tokens for settings: {tokens}")
         data_object = json.loads(text) # Parse the response
         validate(data_object, self.schema) # Validate the response here
         
