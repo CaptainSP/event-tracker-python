@@ -25,11 +25,12 @@ class EventData(typing.TypedDict):
     location: str
     priority: int
     imageUrl: str
-    tags: typing.List[str]
+    tags: list[str]
+    
 
 class EventExtractorResponse(typing.TypedDict):
     hasEvent: bool
-    eventData: EventData  # Updated to a single event object, not a dictionary
+    eventData: EventData
     
 
 class EventExtractor:
@@ -228,7 +229,8 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             print(data_object)
             has_event = data_object['hasEvent']
             if has_event:
-                print('Event data found')
+                self.add_event(data_object['eventData'], access_token)
+                self.add_event_to_database(data_object['eventData'])
             return data_object
 
     def add_event(self, event_data, access_token):
