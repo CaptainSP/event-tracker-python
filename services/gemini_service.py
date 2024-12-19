@@ -25,7 +25,7 @@ class EventData:
     location: str
     priority: int
     imageUrl: str
-    tags: list[str]
+    tags: typing.List[str]
     
 
 class EventExtractorResponse(typing.TypedDict):
