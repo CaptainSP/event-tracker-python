@@ -9,13 +9,15 @@ from datetime import datetime
 import requests
 import psycopg2
 from jsonschema import validate
+import typing_extensions as typing
+
 
 current_year = datetime.now().year
 
 
 load_dotenv()
 
-class EventData:
+class EventData(typing.TypedDict):
     title: str
     summary: str
     startDate: str
@@ -26,7 +28,7 @@ class EventData:
     tags: list[str]
     
 
-class EventExtractorResponse:
+class EventExtractorResponse(typing.TypedDict):
     hasEvent: bool
     eventData: EventData
     
@@ -332,7 +334,7 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             self.conn.rollback()
             raise
         
-class CalendarAddedResponse:
+class CalendarAddedResponse(typing.TypedDict):
     addToCalendar: bool
 
 class CalendarAdder:
