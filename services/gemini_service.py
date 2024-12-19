@@ -64,13 +64,15 @@ class EventExtractor:
                             "type": "string"
                         },
                         "location": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": True
                         },
                         "priority": {
                             "type": "number"
                         },
                         "imageUrl": {
-                            "type": "string"
+                            "type": "string",
+                            "nullable": True
                         },
                         "tags": {
                             "type": "array",
