@@ -1,12 +1,32 @@
 import requests
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import current_app as app
 from rq import Queue
+from datetime import datetime
 from services.gemini_service import process_job
 
 class MailsService:
     def __init__(self, app, redis_conn, pg_conn):
         self.queue = Queue('gemini', connection=redis_conn)
         self.pg_conn = pg_conn
+        
+        # Start the scheduler
+        self.scheduler = BackgroundScheduler()
+        self.scheduler.add_job(self.fetch_all_users_emails, 'interval', hours=1, next_run_time=datetime.now())
+        self.scheduler.start()
+
+    def fetch_all_users_emails(self):
+        users = self.fetch_users()
+        for user in users:
+            self.fetch_emails(user['accessToken'], user)
+            
+    def fetch_users(self):
+        cursor = self.pg_conn.cursor()
+        cursor.execute('SELECT "id", "accessToken" FROM "user"')
+        users = cursor.fetchall()
+        cursor.close()
+        users_list = [{'id': user[0], 'accessToken': user[1]} for user in users]
+        return users_list
 
     def fetch_emails(self, access_token, user):
         try:

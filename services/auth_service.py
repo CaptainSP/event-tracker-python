@@ -64,6 +64,9 @@ class AuthService:
         if not user:
             user = self.create_user(email, access_token)
         else:
+            cursor = self.pg_conn.cursor()
+            cursor.execute('UPDATE "user" SET "accessToken" = %s WHERE "email" = %s', (access_token, email))
+            self.pg_conn.commit()
             user['access_token'] = access_token
             # Update user in database
         return user
