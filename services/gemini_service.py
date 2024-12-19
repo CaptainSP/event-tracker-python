@@ -30,7 +30,7 @@ class EventData(typing.TypedDict):
 
 class EventExtractorResponse(typing.TypedDict):
     hasEvent: bool
-    eventData: dict[EventData]
+    eventData: dict[str,EventData]
     
 
 class EventExtractor:
