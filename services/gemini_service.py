@@ -223,10 +223,10 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             chat = self.model.start_chat()
             response = chat.send_message(f"Sender: {email['sender']['emailAddress']['name']} - {email['sender']['emailAddress']['address']}\n\n{body_content}")
             text = response.text
-            
+            print(text)
             data_object = json.loads(text) # Parse the response
             validate(data_object, self.schema) # Validate the response here
-            
+            print(data_object)
             has_event = data_object['hasEvent']
             if has_event:
                 self.add_event(data_object['eventData'], access_token)
