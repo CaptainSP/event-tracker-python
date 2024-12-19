@@ -91,7 +91,7 @@ class EventExtractor:
             "top_k": 40,
             "max_output_tokens": 8192,
             "response_mime_type": "application/json",
-            "response_schema": EventExtractorResponse,
+            
         }
        
         self.system_instruction = """
