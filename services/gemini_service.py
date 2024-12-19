@@ -8,11 +8,28 @@ import os
 from datetime import datetime
 import requests
 import psycopg2
+from jsonschema import validate
 
 current_year = datetime.now().year
 
 
 load_dotenv()
+
+class EventData:
+    title: str
+    summary: str
+    startDate: str
+    endDate: str
+    location: str
+    priority: int
+    imageUrl: str
+    tags: list[str]
+    
+
+class EventExtractorResponse:
+    hasEvent: bool
+    eventData: EventData
+    
 
 class EventExtractor:
     def __init__(self, conn, user):
@@ -23,6 +40,48 @@ class EventExtractor:
         
         self.adder = CalendarAdder(conn, user)
         
+        self.schema = {
+            "type": "object",
+            "properties": {
+                "hasEvent": {
+                    "type": "boolean"
+                },
+                "eventData": {
+                    "type": "object",
+                    "properties": {
+                        "title": {
+                            "type": "string"
+                        },
+                        "summary": {
+                            "type": "string"
+                        },
+                        "startDate": {
+                            "type": "string"
+                        },
+                        "endDate": {
+                            "type": "string"
+                        },
+                        "location": {
+                            "type": "string"
+                        },
+                        "priority": {
+                            "type": "number"
+                        },
+                        "imageUrl": {
+                            "type": "string"
+                        },
+                        "tags": {
+                            "type": "array",
+                            "items": {
+                                "type": "string"
+                            }
+                        }
+                    },
+                    "required": ["title", "summary", "startDate", "endDate"]
+                }
+            },
+            "required": ["hasEvent"]
+        }
 
         # Create the model
         generation_config = {
@@ -30,7 +89,8 @@ class EventExtractor:
             "top_p": 0.95,
             "top_k": 40,
             "max_output_tokens": 8192,
-            "response_mime_type": "text/plain",
+            "response_mime_type": "application/json",
+            "response_schema": EventExtractorResponse,
         }
        
         self.system_instruction = """
@@ -161,8 +221,10 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             chat = self.model.start_chat()
             response = chat.send_message(f"Sender: {email['sender']['emailAddress']['name']} - {email['sender']['emailAddress']['address']}\n\n{body_content}")
             text = response.text
-            json_in_text = text[text.index('```json') + len('```json'): text.rindex('```')]
-            data_object = json.loads(json_in_text)
+            
+            data_object = json.loads(text) # Parse the response
+            validate(data_object, self.schema) # Validate the response here
+            
             has_event = data_object['hasEvent']
             if has_event:
                 self.add_event(data_object['eventData'], access_token)
@@ -269,6 +331,9 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             print(f"Error in database operation: {e}")
             self.conn.rollback()
             raise
+        
+class CalendarAddedResponse:
+    addToCalendar: bool
 
 class CalendarAdder:
     def __init__(self, conn, user):
@@ -276,6 +341,15 @@ class CalendarAdder:
         genai.configure(api_key=self.api_key)
         self.conn = conn
         self.user = user
+        
+        self.schema = {
+            "type": "object",
+            "properties": {
+                "addToCalendar": {
+                    "type": "boolean"
+                }
+            },
+        }
 
         # Create the model
         generation_config = {
@@ -283,7 +357,8 @@ class CalendarAdder:
             "top_p": 0.95,
             "top_k": 40,
             "max_output_tokens": 8192,
-            "response_mime_type": "text/plain",
+            "response_mime_type":"application/json",
+            "response_schema":CalendarAddedResponse,
         }
         
         self.system_instruction = """
@@ -339,9 +414,10 @@ The expected output format is:
                                      ***The user settings prompot***\n
                                      {settings_text}
                                      """)
-        text = response.text
-        json_in_text = text[text.index('```json') + len('```json'): text.rindex('```')]
-        data_object = json.loads(json_in_text)
+        text = response.text # Get the response text
+        data_object = json.loads(text) # Parse the response
+        validate(data_object, self.schema) # Validate the response here
+        
         return data_object       
 
 def process_job(email, access_token, user):
