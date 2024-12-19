@@ -17,7 +17,7 @@ current_year = datetime.now().year
 
 load_dotenv()
 
-class EventData(typing.TypedDict):
+class EventData:
     title: str
     summary: str
     startDate: str
