@@ -26,11 +26,10 @@ class EventData(typing.TypedDict):
     priority: int
     imageUrl: str
     tags: typing.List[str]
-    
 
 class EventExtractorResponse(typing.TypedDict):
     hasEvent: bool
-    eventData: typing.Dict[str,EventData]
+    eventData: EventData  # Updated to a single event object, not a dictionary
     
 
 class EventExtractor:
