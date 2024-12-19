@@ -24,7 +24,6 @@ class EventData(typing.TypedDict):
     endDate: str
     location: str
     priority: int
-    imageUrl: str
     tags: list[str]
     
 
@@ -65,14 +64,10 @@ class EventExtractor:
                         },
                         "location": {
                             "type": "string",
-                            "nullable": True
+                            
                         },
                         "priority": {
                             "type": "number"
-                        },
-                        "imageUrl": {
-                            "type": "string",
-                            "nullable": True
                         },
                         "tags": {
                             "type": "array",
@@ -165,7 +160,6 @@ Project Manager
     "location": "string",
     "title": "Project Kick-off Meeting",
     "priority": 75,
-    "imageUrl": "string",
     "tags": ["Meeting"]
   }
 }
@@ -195,7 +189,6 @@ Project Manager
     "summary":"string",
     "location": "string",
     "priority": number,
-    "imageUrl": "string",
     "tags": ["string"]
   }
 }
