@@ -229,8 +229,7 @@ This instruction sets a clear task for the LLM and provides guidance on how to a
             print(data_object)
             has_event = data_object['hasEvent']
             if has_event:
-                self.add_event(data_object['eventData'], access_token)
-                self.add_event_to_database(data_object['eventData'])
+                print('Event data found')
             return data_object
 
     def add_event(self, event_data, access_token):
